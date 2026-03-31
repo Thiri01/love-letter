@@ -1,0 +1,360 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>给最亲爱的你</title>
+    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.5.1/dist/confetti.browser.min.js"></script>
+    <style>
+        :root {
+            --primary: #ff4b5c;
+            --secondary: #ff9a9e;
+            --accent: #4a148c;
+            --bg: #fdf2f2;
+        }
+        body {
+            font-family: 'PingFang SC', 'Microsoft YaHei', sans-serif;
+            background: linear-gradient(135deg, #fdf2f2 0%, #fae1e1 100%);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            margin: 0;
+            color: #333;
+            overflow-x: hidden;
+        }
+        .container {
+            background: white;
+            padding: 2.5rem;
+            border-radius: 30px;
+            box-shadow: 0 15px 35px rgba(255, 75, 92, 0.1);
+            text-align: center;
+            max-width: 450px;
+            width: 90%;
+            border: 2px solid #fff;
+            transition: all 0.3s ease;
+            position: relative;
+            z-index: 2;
+        }
+        
+        .gallery-container {
+            border: 15px solid white;
+            border-bottom: 60px solid white; 
+            border-radius: 5px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+            margin: 20px auto;
+            max-width: 250px;
+            height: 250px;
+            overflow: visible;
+            background: #eee;
+            position: relative;
+            cursor: pointer;
+        }
+        .gallery-img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            opacity: 0;
+            transition: opacity 0.8s ease-in-out;
+            position: absolute;
+            top: 0; left: 0;
+        }
+        .gallery-img.active { opacity: 1; }
+        .gallery-caption {
+            position: absolute;
+            bottom: -50px;
+            width: 100%;
+            font-family: 'STKaiti', 'KaiTi', serif; 
+            font-size: 1.1rem;
+            color: #444;
+            text-align: center;
+            font-weight: bold;
+        }
+        
+        .mood-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 12px;
+            margin-bottom: 20px;
+        }
+        button {
+            padding: 12px;
+            border: 1px solid #eee;
+            border-radius: 15px;
+            background: white;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-size: 0.9rem;
+            outline: none;
+        }
+        button:hover {
+            background: var(--bg);
+            border-color: var(--primary);
+            transform: translateY(-2px);
+        }
+        .btn-main {
+            background: var(--primary);
+            color: white;
+            width: 100%;
+            margin-top: 10px;
+            border: none;
+            font-weight: bold;
+            font-size: 1rem;
+            animation: pulse 2s infinite;
+        }
+
+        #response-box {
+            margin-top: 25px;
+            padding: 15px;
+            border-radius: 15px;
+            background: #fffafa;
+            min-height: 60px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-left: 5px solid var(--primary);
+            font-weight: 500;
+        }
+
+        /* --- NEW: PIN PAD STYLING --- */
+        #pin-overlay {
+            display: none;
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(255, 75, 92, 0.95);
+            z-index: 1000;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            color: white;
+        }
+        .pin-display {
+            font-size: 2.5rem;
+            letter-spacing: 15px;
+            margin-bottom: 30px;
+            height: 50px;
+            font-weight: bold;
+        }
+        .keypad {
+            display: grid;
+            grid-template-columns: repeat(3, 80px);
+            gap: 15px;
+        }
+        .key {
+            width: 80px; height: 80px;
+            border-radius: 50%;
+            border: 2px solid white;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-size: 1.5rem;
+            cursor: pointer;
+            transition: 0.2s;
+        }
+        .key:active { background: white; color: var(--primary); }
+
+        /* SECRET LETTER STYLING */
+        #secret-letter {
+            display: none;
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 80%;
+            max-width: 400px;
+            background: #fff0f0;
+            padding: 25px;
+            border-radius: 20px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.3);
+            border: 2px dashed var(--primary);
+            z-index: 1100;
+            text-align: center;
+        }
+        .close-letter {
+            float: right;
+            cursor: pointer;
+            font-weight: bold;
+            color: var(--primary);
+        }
+
+        @keyframes pulse {
+            0% { box-shadow: 0 0 0 0 rgba(255, 75, 92, 0.4); }
+            70% { box-shadow: 0 0 0 10px rgba(255, 75, 92, 0); }
+            100% { box-shadow: 0 0 0 0 rgba(255, 75, 92, 0); }
+        }
+        .shake { animation: shake 0.5s; }
+        @keyframes shake {
+            0%, 100% { transform: translateX(0); }
+            25% { transform: translateX(-5px); }
+            75% { transform: translateX(5px); }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="container" id="main-card">
+        <h1>亲爱的，你好！ ❤️</h1>
+        <p class="subtitle">这是属于你的专属空间。</p>
+        
+        <div class="gallery-container" onclick="nextPhoto()">
+            <img src="https://i.imgur.com/0sBKFIL.jpeg" class="gallery-img active">
+            <img src="https://i.imgur.com/u2feFNE.jpeg" class="gallery-img">
+            <img src="https://i.imgur.com/INDzyrs.jpeg" class="gallery-img">
+            <img src="https://i.imgur.com/LN5i26v.jpeg" class="gallery-img">
+            <img src="https://i.imgur.com/6FBHmL4.jpeg" class="gallery-img">
+            <img src="https://i.imgur.com/9ABYPvO.jpeg" class="gallery-img">
+            <img src="https://i.imgur.com/J3k5WL5.jpeg" class="gallery-img">
+            <img src="https://i.imgur.com/YFE29SN.jpeg" class="gallery-img">
+            <img src="https://i.imgur.com/Lt4D3G3.jpeg" class="gallery-img">
+            <img src="https://i.imgur.com/LIuOtTm.jpeg" class="gallery-img">
+            <div class="gallery-caption" id="caption">第一次拍的情侣照 ✨</div>
+        </div>
+        
+        <p>你现在感觉怎么样？</p>
+        <div class="mood-grid">
+            <button onclick="updateStatus('tired')">😴 累了</button>
+            <button onclick="updateStatus('stressed')">🤯 压力大</button>
+            <button onclick="updateStatus('happy')">😎 很好！</button>
+            <button onclick="updateStatus('miss')">🥺 想你</button>
+        </div>
+
+        <button class="btn-main" onclick="triggerSurprise(this)">✨ 点击领取惊喜 ✨</button>
+
+        <div id="response-box">
+            选一个心情，或者点击相框看我们的回忆！
+        </div>
+
+        <div class="stats">
+            已发送虚拟拥抱：<span id="hug-count">0</span> 次
+        </div>
+    </div>
+
+    <div id="pin-overlay">
+        <h3>输入纪念日解锁 (MMDD)</h3>
+        <div class="pin-display" id="pin-display">****</div>
+        <div class="keypad">
+            <div class="key" onclick="pressKey('1')">1</div>
+            <div class="key" onclick="pressKey('2')">2</div>
+            <div class="key" onclick="pressKey('3')">3</div>
+            <div class="key" onclick="pressKey('4')">4</div>
+            <div class="key" onclick="pressKey('5')">5</div>
+            <div class="key" onclick="pressKey('6')">6</div>
+            <div class="key" onclick="pressKey('7')">7</div>
+            <div class="key" onclick="pressKey('8')">8</div>
+            <div class="key" onclick="pressKey('9')">9</div>
+            <div class="key" style="visibility: hidden;"></div>
+            <div class="key" onclick="pressKey('0')">0</div>
+            <div class="key" onclick="resetPin()">❌</div>
+        </div>
+    </div>
+
+    <div id="secret-letter">
+        <span class="close-letter" onclick="document.getElementById('secret-letter').style.display='none'">✖</span>
+        <h3 style="color:var(--primary); margin-top:0;">💌 一封秘密情书</h3>
+        <p id="letter-content" style="font-size: 0.95rem; line-height: 1.6; color: #555;">
+            亲爱的，恭喜你发现了这个彩蛋！<br>
+            谢谢你一直以来的陪伴和包容。
+            无论以后发生什么，我都会一直在你身边。你是我生命中最棒的惊喜！
+           解锁成功啦～奖励时间到🎁
+想要什么就告诉我吧，我都会尽力满足你～
+
+            <br><br>
+            <b>永远爱你的香</b>
+        </p>
+    </div>
+
+    <script>
+        let hugs = 0;
+        let surpriseClicks = 0;
+        let currentPhotoIndex = 0;
+        let enteredPin = "";
+        const correctPin = "1026"; // <--- 在这里修改你的4位数字密码 (MMDD)
+        
+        const photos = document.querySelectorAll('.gallery-img');
+        const captions = [
+            "第一次拍的情侣照 ✨", "那天的大海真的好美... 🌅", "我们就像一对爱情鸟 ❤️", 
+            "最喜欢你可爱的一面！ 😂", "有你的地方就是全世界 🌎", "你让我感到好幸福！ 🥰",
+            "爱你直到永远 ♾️", "我心中的唯一 👑", "和你的每一刻都值得收藏 📸", "爱你胜过星辰大海 🌙"
+        ];
+        
+        const compliments = [
+            "你是我见过最努力的人，我为你感到骄傲！", "温馨提示：你今天依然帅气逼人。",
+            "我好喜欢你的奇思妙想，你真聪明。", "有你在我的世界里，一切都变得灿烂了。",
+            "我已经在倒计时见你的时刻了！", "加油！我相信你。"
+        ];
+
+        const coupons = [
+            "🎫 兑换券：一个长长的拥抱", "🎫 兑换券：一次全身按摩", 
+            "🎫 兑换券：陪你看场你想看的电影", "🎫 兑换券：一份你最爱的甜点"
+        ];
+
+        function nextPhoto() {
+            photos[currentPhotoIndex].classList.remove('active');
+            currentPhotoIndex = (currentPhotoIndex + 1) % photos.length;
+            photos[currentPhotoIndex].classList.add('active');
+            document.getElementById('caption').innerText = captions[currentPhotoIndex];
+        }
+
+        function updateStatus(mood) {
+            const box = document.getElementById('response-box');
+            hugs++;
+            document.getElementById('hug-count').innerText = hugs;
+            const responses = {
+                'tired': "喝杯水，休息五分钟吧。你辛苦了！ 💧",
+                'stressed': "闭上眼睛十秒钟。你比困难强大。 ❤️",
+                'happy': "太棒了！你今天超棒的！ 🔥",
+                'miss': "我也超级想你！给你一个大亲亲！ 💋"
+            };
+            box.innerText = responses[mood];
+        }
+
+        function triggerSurprise(button) {
+            const box = document.getElementById('response-box');
+            surpriseClicks++;
+            hugs++;
+            document.getElementById('hug-count').innerText = hugs;
+
+            if (Math.random() > 0.7) {
+                const cIdx = Math.floor(Math.random() * coupons.length);
+                box.innerHTML = `<span style="color:var(--primary); font-weight:bold;">惊喜兑换券！</span><br>${coupons[cIdx]}`;
+            } else {
+                box.innerText = compliments[Math.floor(Math.random() * compliments.length)];
+            }
+
+            confetti({ particleCount: 100, spread: 70, origin: { y: 0.6 } });
+
+            // 10 clicks triggers the PIN pad
+            if (surpriseClicks === 10) {
+                document.getElementById('main-card').classList.add('shake');
+                setTimeout(() => {
+                    document.getElementById('pin-overlay').style.display = 'flex';
+                }, 500);
+            }
+        }
+
+        // --- PIN PAD LOGIC ---
+        function pressKey(num) {
+            if (enteredPin.length < 4) {
+                enteredPin += num;
+                document.getElementById('pin-display').innerText = "*".repeat(enteredPin.length).padEnd(4, "-");
+            }
+            
+            if (enteredPin.length === 4) {
+                if (enteredPin === correctPin) {
+                    document.getElementById('pin-overlay').style.display = 'none';
+                    document.getElementById('secret-letter').style.display = 'block';
+                    confetti({ particleCount: 300, spread: 100, colors: ['#ff0000', '#ffb6c1'] });
+                } else {
+                    alert("密码不对哦，再想一想？❤️");
+                    resetPin();
+                }
+            }
+        }
+
+        function resetPin() {
+            enteredPin = "";
+            document.getElementById('pin-display').innerText = "****";
+        }
+    </script>
+</body>
+</html>
