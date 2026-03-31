@@ -1,0 +1,367 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>For My Dearest</title>
+    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.5.1/dist/confetti.browser.min.js"></script>
+    <style>
+        :root {
+            --primary: #ff4b5c;
+            --secondary: #ff9a9e;
+            --accent: #4a148c;
+            --bg: #fdf2f2;
+        }
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #fdf2f2 0%, #fae1e1 100%);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            margin: 0;
+            color: #333;
+            overflow-x: hidden;
+        }
+        .container {
+            background: white;
+            padding: 2.5rem;
+            border-radius: 30px;
+            box-shadow: 0 15px 35px rgba(255, 75, 92, 0.1);
+            text-align: center;
+            max-width: 450px;
+            width: 90%;
+            border: 2px solid #fff;
+            transition: all 0.3s ease;
+            position: relative;
+            z-index: 2;
+        }
+        
+        .gallery-container {
+            border: 15px solid white;
+            border-bottom: 60px solid white; 
+            border-radius: 5px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+            margin: 20px auto;
+            max-width: 250px;
+            height: 250px;
+            overflow: visible;
+            background: #eee;
+            position: relative;
+            cursor: pointer;
+        }
+        .gallery-img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            opacity: 0;
+            transition: opacity 0.8s ease-in-out;
+            position: absolute;
+            top: 0; left: 0;
+        }
+        .gallery-img.active { opacity: 1; }
+        .gallery-caption {
+            position: absolute;
+            bottom: -50px;
+            width: 100%;
+            font-style: italic;
+            font-size: 1.1rem;
+            color: #444;
+            text-align: center;
+            font-weight: bold;
+        }
+        
+        .mood-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 12px;
+            margin-bottom: 20px;
+        }
+        button {
+            padding: 12px;
+            border: 1px solid #eee;
+            border-radius: 15px;
+            background: white;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-size: 0.9rem;
+            outline: none;
+        }
+        button:hover {
+            background: var(--bg);
+            border-color: var(--primary);
+            transform: translateY(-2px);
+        }
+        .btn-main {
+            background: var(--primary);
+            color: white;
+            width: 100%;
+            margin-top: 10px;
+            border: none;
+            font-weight: bold;
+            font-size: 1rem;
+            animation: pulse 2s infinite;
+        }
+
+        #response-box {
+            margin-top: 25px;
+            padding: 15px;
+            border-radius: 15px;
+            background: #fffafa;
+            min-height: 60px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-left: 5px solid var(--primary);
+            font-weight: 500;
+        }
+
+        #pin-overlay {
+            display: none;
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(255, 75, 92, 0.95);
+            z-index: 1000;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            color: white;
+        }
+        .pin-display {
+            font-size: 2.5rem;
+            letter-spacing: 15px;
+            margin-bottom: 30px;
+            height: 50px;
+            font-weight: bold;
+        }
+        .keypad {
+            display: grid;
+            grid-template-columns: repeat(3, 80px);
+            gap: 15px;
+        }
+        .key {
+            width: 80px; height: 80px;
+            border-radius: 50%;
+            border: 2px solid white;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-size: 1.5rem;
+            cursor: pointer;
+            transition: 0.2s;
+        }
+        .key:active { background: white; color: var(--primary); }
+
+        #secret-letter {
+            display: none;
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 80%;
+            max-width: 400px;
+            background: #fff0f0;
+            padding: 25px;
+            border-radius: 20px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.3);
+            border: 2px dashed var(--primary);
+            z-index: 1100;
+            text-align: center;
+        }
+        .close-letter {
+            float: right;
+            cursor: pointer;
+            font-weight: bold;
+            color: var(--primary);
+        }
+
+        @keyframes pulse {
+            0% { box-shadow: 0 0 0 0 rgba(255, 75, 92, 0.4); }
+            70% { box-shadow: 0 0 0 10px rgba(255, 75, 92, 0); }
+            100% { box-shadow: 0 0 0 0 rgba(255, 75, 92, 0); }
+        }
+        .shake { animation: shake 0.5s; }
+        @keyframes shake {
+            0%, 100% { transform: translateX(0); }
+            25% { transform: translateX(-5px); }
+            75% { transform: translateX(5px); }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="container" id="main-card">
+        <h1>Hi Darling! ❤️</h1>
+        <p class="subtitle">This is a special space just for you.</p>
+        
+        <div class="gallery-container" onclick="nextPhoto()">
+            <img src="https://i.imgur.com/0sBKFIL.jpeg" class="gallery-img active">
+            <img src="https://i.imgur.com/u2feFNE.jpeg" class="gallery-img">
+            <img src="https://i.imgur.com/INDzyrs.jpeg" class="gallery-img">
+            <img src="https://i.imgur.com/LN5i26v.jpeg" class="gallery-img">
+            <img src="https://i.imgur.com/6FBHmL4.jpeg" class="gallery-img">
+            <img src="https://i.imgur.com/9ABYPvO.jpeg" class="gallery-img">
+            <img src="https://i.imgur.com/J3k5WL5.jpeg" class="gallery-img">
+            <img src="https://i.imgur.com/YFE29SN.jpeg" class="gallery-img">
+            <img src="https://i.imgur.com/Lt4D3G3.jpeg" class="gallery-img">
+            <img src="https://i.imgur.com/LIuOtTm.jpeg" class="gallery-img">
+            <div class="gallery-caption" id="caption">Our first photo together ✨</div>
+        </div>
+        
+        <p>How are you feeling right now?</p>
+        <div class="mood-grid">
+            <button onclick="updateStatus('tired')">😴 Tired</button>
+            <button onclick="updateStatus('stressed')">🤯 Stressed</button>
+            <button onclick="updateStatus('happy')">😎 Great!</button>
+            <button onclick="updateStatus('miss')">🥺 Miss You</button>
+        </div>
+
+        <button class="btn-main" onclick="triggerSurprise(this)">✨ Click for a Surprise ✨</button>
+
+        <div id="response-box">
+            Pick a mood, or click the frame to see our memories!
+        </div>
+
+        <div class="stats">
+            Virtual hugs sent: <span id="hug-count">0</span>
+        </div>
+    </div>
+
+    <div id="pin-overlay">
+        <h3>Enter Anniversary to Unlock (MMDD)</h3>
+        <div class="pin-display" id="pin-display">****</div>
+        <div class="keypad">
+            <div class="key" onclick="pressKey('1')">1</div>
+            <div class="key" onclick="pressKey('2')">2</div>
+            <div class="key" onclick="pressKey('3')">3</div>
+            <div class="key" onclick="pressKey('4')">4</div>
+            <div class="key" onclick="pressKey('5')">5</div>
+            <div class="key" onclick="pressKey('6')">6</div>
+            <div class="key" onclick="pressKey('7')">7</div>
+            <div class="key" onclick="pressKey('8')">8</div>
+            <div class="key" onclick="pressKey('9')">9</div>
+            <div class="key" style="visibility: hidden;"></div>
+            <div class="key" onclick="pressKey('0')">0</div>
+            <div class="key" onclick="resetPin()">❌</div>
+        </div>
+    </div>
+
+    <div id="secret-letter">
+        <span class="close-letter" onclick="document.getElementById('secret-letter').style.display='none'">✖</span>
+        <h3 style="color:var(--primary); margin-top:0;">💌 A Secret Love Letter</h3>
+        <p id="letter-content" style="font-size: 0.95rem; line-height: 1.6; color: #555;">
+            Dearest, congratulations on finding this hidden gem!<br><br>
+            Thank you for your constant companionship and patience. 
+            No matter what happens in the future, I will always be by your side. You are the best surprise in my life!<br><br>
+            Unlock successful! It's reward time 🎁<br>
+            Just tell me what you want, and I'll do my best to make it happen~
+            <br><br>
+            <b>Love you forever, Xiang</b>
+        </p>
+    </div>
+
+    <script>
+        let hugs = 0;
+        let surpriseClicks = 0;
+        let currentPhotoIndex = 0;
+        let enteredPin = "";
+        const correctPin = "1026"; // Change your 4-digit MMDD password here
+        
+        const photos = document.querySelectorAll('.gallery-img');
+        const captions = [
+            "Our first photo together ✨", 
+            "The ocean was so beautiful that day... 🌅", 
+            "We're like two lovebirds ❤️", 
+            "I love your cute side! 😂", 
+            "Anywhere with you is the whole world 🌎", 
+            "You make me feel so happy! 🥰",
+            "Love you until forever ♾️", 
+            "The only one in my heart 👑", 
+            "Every moment with you is worth keeping 📸", 
+            "Love you more than the stars and sea 🌙"
+        ];
+        
+        const compliments = [
+            "You're the most hardworking person I know, I'm so proud of you!", 
+            "Daily Reminder: You're still incredibly handsome today.",
+            "I love your creative ideas, you're so smart.", 
+            "With you in my world, everything becomes bright.",
+            "I'm already counting down the moments until I see you!", 
+            "Keep going! I believe in you."
+        ];
+
+        const coupons = [
+            "🎫 Voucher: One long, warm hug", 
+            "🎫 Voucher: A full-body massage", 
+            "🎫 Voucher: Watching any movie you want together", 
+            "🎫 Voucher: Your favorite dessert"
+        ];
+
+        function nextPhoto() {
+            photos[currentPhotoIndex].classList.remove('active');
+            currentPhotoIndex = (currentPhotoIndex + 1) % photos.length;
+            photos[currentPhotoIndex].classList.add('active');
+            document.getElementById('caption').innerText = captions[currentPhotoIndex];
+        }
+
+        function updateStatus(mood) {
+            const box = document.getElementById('response-box');
+            hugs++;
+            document.getElementById('hug-count').innerText = hugs;
+            const responses = {
+                'tired': "Drink some water and take a 5-minute break. You've worked hard! 💧",
+                'stressed': "Close your eyes for ten seconds. You are stronger than any challenge. ❤️",
+                'happy': "That's amazing! You're doing great today! 🔥",
+                'miss': "I miss you like crazy too! Sending you a huge kiss! 💋"
+            };
+            box.innerText = responses[mood];
+        }
+
+        function triggerSurprise(button) {
+            const box = document.getElementById('response-box');
+            surpriseClicks++;
+            hugs++;
+            document.getElementById('hug-count').innerText = hugs;
+
+            if (Math.random() > 0.7) {
+                const cIdx = Math.floor(Math.random() * coupons.length);
+                box.innerHTML = `<span style="color:var(--primary); font-weight:bold;">Surprise Voucher!</span><br>${coupons[cIdx]}`;
+            } else {
+                box.innerText = compliments[Math.floor(Math.random() * compliments.length)];
+            }
+
+            confetti({ particleCount: 100, spread: 70, origin: { y: 0.6 } });
+
+            if (surpriseClicks === 10) {
+                document.getElementById('main-card').classList.add('shake');
+                setTimeout(() => {
+                    document.getElementById('pin-overlay').style.display = 'flex';
+                }, 500);
+            }
+        }
+
+        function pressKey(num) {
+            if (enteredPin.length < 4) {
+                enteredPin += num;
+                document.getElementById('pin-display').innerText = "*".repeat(enteredPin.length).padEnd(4, "-");
+            }
+            
+            if (enteredPin.length === 4) {
+                if (enteredPin === correctPin) {
+                    document.getElementById('pin-overlay').style.display = 'none';
+                    document.getElementById('secret-letter').style.display = 'block';
+                    confetti({ particleCount: 300, spread: 100, colors: ['#ff0000', '#ffb6c1'] });
+                } else {
+                    alert("That's not the right date... try again! ❤️");
+                    resetPin();
+                }
+            }
+        }
+
+        function resetPin() {
+            enteredPin = "";
+            document.getElementById('pin-display').innerText = "****";
+        }
+    </script>
+</body>
+</html>
